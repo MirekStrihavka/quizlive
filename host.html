@@ -365,11 +365,16 @@ async function dbSet(path,val){ try{ await set(dbRef(path),val); }catch(e){ cons
 async function dbGetChildren(path){
   try{
     const s=await get(dbRef(path));
+    console.log('[dbGetChildren]', path, 'exists:', s.exists());
     if(!s.exists()) return [];
     const out=[];
-    s.forEach(child=>out.push(child.val()));
+    s.forEach(child=>{
+      const v=child.val();
+      console.log('[dbGetChildren] child:', child.key, v);
+      out.push(v);
+    });
     return out;
-  }catch(e){ console.error(e); return []; }
+  }catch(e){ console.error('[dbGetChildren error]', e); return []; }
 }
 
 // ── INIT ──
@@ -389,13 +394,17 @@ new QRCode(document.getElementById('qr-box'),{
 await dbSet('session/'+code, {code,phase:'lobby',currentQ:-1,questionCount:0,revealed:false,answersOpen:false,ts:Date.now()});
 renderQL();
 updLabels();
+poll(); // fire immediately
 pollInt = setInterval(poll, 1500);
 
 // ── POLL ──
 async function poll(){
-  const players = await dbGetChildren('player/'+code);
-  updUI(players);
-  if(phase==='question'||phase==='revealed') updStats(players);
+  try {
+    const players = await dbGetChildren('player/'+code);
+    console.log('[poll] players:', players.length, players);
+    updUI(players);
+    if(phase==='question'||phase==='revealed') updStats(players);
+  } catch(e) { console.error('[poll error]', e); }
 }
 
 async function syncSes(){
@@ -447,7 +456,10 @@ function updUI(players){
       <div class="ppts">${p.score||0} b.</div>
     </div>`).join('');
 
-  document.getElementById('btn-start').disabled = questions.length===0;
+  // Enable start button when questions are loaded
+  const startBtn = document.getElementById('btn-start');
+  if(startBtn) startBtn.disabled = questions.length===0;
+  console.log('[updUI] players:', n, 'questions:', questions.length, 'btn disabled:', questions.length===0);
 }
 
 function updStats(players){
