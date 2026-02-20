@@ -208,10 +208,56 @@ let timerInt=null;
 let pollInt=null;
 let interShownFor=-1;
 
-/* STORAGE */
-async function sg(k,sh=true){try{const r=await window.storage.get(k,sh);return r?JSON.parse(r.value):null}catch{return null}}
-async function ss(k,v,sh=true){try{await window.storage.set(k,JSON.stringify(v),sh)}catch{}}
-async function sl(p,sh=true){try{const r=await window.storage.list(p,sh);return r?r.keys:[]}catch{return[]}}
+/* FIREBASE CONFIG */
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyBZsk77K9aRF-LHbLZdgrVhI4rEARykdaQ",
+  authDomain: "quizlive-f87c1.firebaseapp.com",
+  databaseURL: "https://quizlive-f87c1-default-rtdb.europe-west1.firebasedatabase.app",
+  projectId: "quizlive-f87c1",
+  storageBucket: "quizlive-f87c1.firebasestorage.app",
+  messagingSenderId: "343853762884",
+  appId: "1:343853762884:web:e9e1fa3d462f4514b7af11",
+  measurementId: "G-3RH67MN6LY"
+};
+
+/* STORAGE – Firebase Realtime Database */
+let _db = null;
+async function getDB(){
+  if(_db) return _db;
+  const {initializeApp} = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-app.js");
+  const {getDatabase} = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+  const app = initializeApp(FIREBASE_CONFIG, 'quizlive');
+  _db = getDatabase(app);
+  return _db;
+}
+function keyToPath(k){ return k.replace(/:/g,'/') }
+async function sg(k){
+  try{
+    const {ref,get} = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+    const db = await getDB();
+    const snap = await get(ref(db, keyToPath(k)));
+    return snap.exists() ? snap.val() : null;
+  }catch(e){console.error('sg',e);return null}
+}
+async function ss(k,v){
+  try{
+    const {ref,set} = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+    const db = await getDB();
+    await set(ref(db, keyToPath(k)), v);
+  }catch(e){console.error('ss',e)}
+}
+async function sl(prefix){
+  try{
+    const {ref,get} = await import("https://www.gstatic.com/firebasejs/10.8.0/firebase-database.js");
+    const db = await getDB();
+    const path = prefix.replace(/:$/,'').replace(/:/g,'/');
+    const snap = await get(ref(db, path));
+    if(!snap.exists()) return [];
+    const keys = [];
+    snap.forEach(child => { keys.push(prefix + child.key); });
+    return keys;
+  }catch(e){console.error('sl',e);return[]}
+}
 
 /* AUTO-FILL CODE FROM URL */
 window.addEventListener('load',()=>{
