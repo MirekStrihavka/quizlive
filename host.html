@@ -308,7 +308,7 @@ select option{background:#1a1a2e}
           <div class="sbox"><div class="sval g" id="s-ok">—</div><div class="ssub">Správně</div></div>
           <div class="sbox"><div class="sval r" id="s-no">—</div><div class="ssub">Špatně</div></div>
         </div>
-        <div class="live-bar"><div class="lbt">Rozložení odpovědí</div><div id="rrows"></div></div>
+        <div class="live-bar"><div class="lbt" id="lbt-label">Průběh odpovídání</div><div id="rrows"></div></div>
         <div class="ans-reveal" id="ans-reveal"><span style="font-size:1.25rem">✓</span> Správná odpověď: <strong id="rev-text"></strong></div>
         <div class="q-actions">
           <button class="btn btn-outline" id="btn-close" onclick="closeAnswers()">🔒 Uzavřít odpovědi</button>
@@ -450,13 +450,34 @@ function updUI(players){
     });
   }
 
-  // Right panel
-  document.getElementById('r-players').innerHTML=players.map(p=>`
-    <div class="prow">
-      <div class="pavatar">${esc(p.name).substring(0,2).toUpperCase()}</div>
-      <div class="pname">${esc(p.name)}</div>
-      <div class="ppts">${p.score||0} b.</div>
-    </div>`).join('');
+  // Right panel - during quiz show waiting players, in lobby show all with score
+  if(phase==='lobby'||phase==='results'){
+    document.getElementById('r-players').innerHTML=players.map(p=>`
+      <div class="prow">
+        <div class="pavatar">${esc(p.name).substring(0,2).toUpperCase()}</div>
+        <div class="pname">${esc(p.name)}</div>
+        <div class="ppts">${p.score||0} b.</div>
+      </div>`).join('');
+  } else {
+    // During quiz: show who hasn't answered yet
+    const waiting=players.filter(p=>!(p.answers&&p.answers[qIdx]!==undefined));
+    const answered=players.filter(p=>p.answers&&p.answers[qIdx]!==undefined);
+    document.getElementById('r-players').innerHTML=
+      (waiting.length?'<div style="padding:7px 10px;font-size:.65rem;font-weight:600;letter-spacing:1.5px;color:var(--gold);text-transform:uppercase">Čeká na odpověď</div>':'')+
+      waiting.map(p=>`
+        <div class="prow">
+          <div class="pavatar" style="background:var(--bg4);border:1px solid var(--border2);color:var(--muted)">${esc(p.name).substring(0,2).toUpperCase()}</div>
+          <div class="pname" style="color:var(--muted)">${esc(p.name)}</div>
+          <div class="ppts" style="color:var(--muted)">…</div>
+        </div>`).join('')+
+      (answered.length?'<div style="padding:7px 10px;font-size:.65rem;font-weight:600;letter-spacing:1.5px;color:var(--success);text-transform:uppercase;border-top:1px solid var(--border)">Odpovědělo</div>':'')+
+      answered.map(p=>`
+        <div class="prow">
+          <div class="pavatar">${esc(p.name).substring(0,2).toUpperCase()}</div>
+          <div class="pname">${esc(p.name)}</div>
+          <div class="ppts" style="color:var(--success)">✓</div>
+        </div>`).join('');
+  }
 
   // Enable start button when questions are loaded
   const startBtn = document.getElementById('btn-start');
@@ -468,21 +489,37 @@ function updStats(players){
   const q=questions[qIdx];
   if(!q) return;
   const ans=players.filter(p=>p.answers&&p.answers[qIdx]!==undefined);
+  const total=players.length||1;
   document.getElementById('s-ans').textContent=ans.length;
   document.getElementById('s-wait').textContent=players.length-ans.length;
-  const counts=[0,0,0,0];
-  ans.forEach(p=>{const a=p.answers[qIdx];if(a>=0&&a<=3)counts[a]++;});
-  const tot=ans.length||1;
-  document.getElementById('rrows').innerHTML=OPTS.map((l,i)=>`
-    <div class="rrow">
-      <div class="rlbl">${l}</div>
-      <div class="rtrack"><div class="rfill" style="width:${counts[i]/tot*100}%;background:${BCOLS[i]}"></div></div>
-      <div class="rcnt">${counts[i]}</div>
-    </div>`).join('');
+
   if(phase==='revealed'){
+    // After reveal: show distribution per option
+    const counts=[0,0,0,0];
+    ans.forEach(p=>{const a=p.answers[qIdx];if(a>=0&&a<=3)counts[a]++;});
+    const tot=ans.length||1;
+    document.getElementById('rrows').innerHTML=OPTS.map((l,i)=>`
+      <div class="rrow">
+        <div class="rlbl">${l}</div>
+        <div class="rtrack"><div class="rfill" style="width:${counts[i]/tot*100}%;background:${BCOLS[i]}"></div></div>
+        <div class="rcnt">${counts[i]}</div>
+      </div>`).join('');
     const ok=ans.filter(p=>p.answers[qIdx]===q.correct).length;
     document.getElementById('s-ok').textContent=ok;
     document.getElementById('s-no').textContent=ans.length-ok;
+  } else {
+    // During answering: show progress - how many have answered out of total
+    const pct=Math.round(ans.length/total*100);
+    document.getElementById('rrows').innerHTML=`
+      <div style="display:flex;align-items:center;gap:10px;padding:4px 0">
+        <div style="flex:1;height:8px;background:var(--bg4);border-radius:4px;overflow:hidden">
+          <div style="height:100%;width:${pct}%;background:var(--gold);border-radius:4px;transition:width .4s ease"></div>
+        </div>
+        <div style="font-size:.78rem;color:var(--text2);min-width:60px;text-align:right">${ans.length} / ${players.length}</div>
+      </div>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-top:8px">
+        ${ans.map(p=>`<div style="background:var(--bg4);border:1px solid var(--border2);border-radius:16px;padding:3px 10px;font-size:.75rem;color:var(--success)">✓ ${esc(p.name)}</div>`).join('')}
+      </div>`;
   }
 }
 
@@ -600,6 +637,8 @@ function renderQ(i){
   document.getElementById('s-ok').textContent='—';
   document.getElementById('s-no').textContent='—';
   document.getElementById('rrows').innerHTML='';
+      const lbtReset=document.getElementById('lbt-label');
+      if(lbtReset) lbtReset.textContent='Průběh odpovídání';
   document.getElementById('btn-rev').disabled=true;
   document.getElementById('btn-next').disabled=true;
   document.getElementById('btn-close').disabled=false;
@@ -643,6 +682,8 @@ window.revealAnswer=async()=>{
   document.getElementById('ans-reveal').classList.add('show');
   document.getElementById('btn-rev').disabled=true;
   document.getElementById('btn-next').disabled=false;
+  const lbtEl=document.getElementById('lbt-label');
+  if(lbtEl) lbtEl.textContent='Rozložení odpovědí';
   await syncSes();
   const players=await dbGetChildren('player/'+code);
   updStats(players);
