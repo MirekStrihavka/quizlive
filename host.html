@@ -194,6 +194,34 @@ select option{background:#1a1a2e}
 .modal-actions{display:flex;gap:8px;justify-content:flex-end}
 @keyframes fadeUp{from{opacity:0;transform:translateY(16px)}to{opacity:1;transform:translateY(0)}}
 .anim{animation:fadeUp .4s ease}
+
+    /* ── RESULTS ── */
+    .res-title{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:700;color:var(--gold2);letter-spacing:1px}
+    .res-stat-card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:14px 18px;margin-bottom:10px}
+    .res-q-label{font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:4px}
+    .res-q-text{font-size:.88rem;color:var(--text2);margin-bottom:10px;line-height:1.45}
+    .res-bar-row{display:flex;align-items:center;gap:8px;margin-bottom:5px}
+    .res-bar-lbl{width:20px;font-size:.7rem;font-weight:700;color:var(--muted);text-align:center;flex-shrink:0}
+    .res-bar-lbl.ok{color:var(--success)}
+    .res-bar-track{flex:1;height:18px;background:var(--bg4);border-radius:4px;overflow:hidden}
+    .res-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding-left:7px;font-size:.68rem;font-weight:700;color:#fff;transition:width .9s cubic-bezier(.4,0,.2,1)}
+    .res-bar-cnt{font-size:.7rem;color:var(--muted);min-width:24px;text-align:right}
+    .res-pct-pill{display:inline-flex;align-items:center;gap:4px;margin-top:6px;padding:2px 9px;border-radius:20px;font-size:.7rem;font-weight:700;background:var(--bg4);color:var(--muted)}
+    .res-pct-pill.good{background:rgba(42,200,120,.12);color:var(--success)}
+    .res-pct-pill.bad{background:rgba(220,80,80,.1);color:#e07070}
+
+    /* gauge rows */
+    .g-row{display:flex;align-items:center;gap:10px;padding:9px 4px;border-bottom:1px solid var(--border);opacity:0;transform:translateY(8px);transition:opacity .45s ease,transform .45s ease}
+    .g-row.vis{opacity:1;transform:translateY(0)}
+    .g-rank{font-family:"Cormorant Garamond",serif;font-size:1.3rem;font-weight:700;color:var(--muted);min-width:28px;text-align:center}
+    .g-rank.t{color:var(--gold2)}
+    .g-name{min-width:100px;max-width:140px;font-size:.82rem;color:var(--text2);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+    .g-track{flex:1;height:20px;background:var(--bg4);border-radius:5px;overflow:hidden}
+    .g-fill{height:100%;border-radius:5px;background:linear-gradient(90deg,#b8912a,var(--gold2));display:flex;align-items:center;justify-content:flex-end;padding-right:6px;font-size:.7rem;font-weight:700;color:var(--bg);transition:width 1.1s cubic-bezier(.4,0,.2,1);min-width:0}
+    .g-fill.s{background:linear-gradient(90deg,#707888,#9ea3ae)}
+    .g-fill.b{background:linear-gradient(90deg,#8a5030,#c07848)}
+    .g-fill.p{background:linear-gradient(90deg,#2a3040,#3a4255)}
+    .g-pts{font-size:.78rem;font-weight:700;color:var(--gold);min-width:44px;text-align:right}
 </style>
 </head>
 <body>
@@ -317,13 +345,46 @@ select option{background:#1a1a2e}
           <button class="btn btn-success" onclick="askFinish()" style="margin-left:auto">🏆 Výsledky</button>
         </div>
       </div>
-      <!-- RESULTS -->
-      <div class="scr" id="scr-res">
-        <div class="res-title anim">◆ Výsledky kvízu</div>
-        <div class="podium anim" id="podium"></div>
-        <div class="ptitle" style="letter-spacing:1.5px;margin-bottom:8px">Celkové pořadí</div>
-        <div class="lb" id="lb"></div>
-        <div style="margin-top:10px"><button class="btn btn-gold" onclick="askReset()">↺ Nový kvíz</button></div>
+      <!-- RESULTS: PAGE 1 – Stats -->
+      <div class="scr" id="scr-res1">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:18px 28px 10px">
+          <div class="res-title">◆ Statistika odpovědí</div>
+          <button class="btn btn-gold" onclick="resPage(2)">Pořadí →</button>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:0 28px 20px" id="res-stats"></div>
+      </div>
+
+      <!-- RESULTS: PAGE 2 – Anonymous ranking -->
+      <div class="scr" id="scr-res2">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:18px 28px 10px">
+          <div class="res-title">◆ Pořadí</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="resPage(1)">← Statistika</button>
+            <button class="btn btn-gold" onclick="resPage(3)">Se jmény →</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:0 28px 20px" id="res-anon"></div>
+        <div style="padding:10px 28px;flex-shrink:0;display:flex;gap:8px;border-top:1px solid var(--border)">
+          <button class="btn btn-outline" id="btn-reveal-next" onclick="revealNext()">▶ Odhalit dalšího</button>
+          <button class="btn btn-outline" onclick="revealAll()">⏭ Odhalit vše</button>
+          <button class="btn btn-gold" onclick="askReset()" style="margin-left:auto">↺ Nový kvíz</button>
+        </div>
+      </div>
+
+      <!-- RESULTS: PAGE 3 – Named ranking -->
+      <div class="scr" id="scr-res3">
+        <div style="display:flex;align-items:center;justify-content:space-between;flex-shrink:0;padding:18px 28px 10px">
+          <div class="res-title">◆ Výsledky se jmény</div>
+          <div style="display:flex;gap:8px">
+            <button class="btn btn-outline" onclick="resPage(2)">← Pořadí</button>
+          </div>
+        </div>
+        <div style="flex:1;overflow-y:auto;padding:0 28px 20px" id="res-named"></div>
+        <div style="padding:10px 28px;flex-shrink:0;display:flex;gap:8px;border-top:1px solid var(--border)">
+          <button class="btn btn-outline" id="btn-reveal-next-named" onclick="revealNextNamed()">▶ Odhalit dalšího</button>
+          <button class="btn btn-outline" onclick="revealAllNamed()">⏭ Odhalit vše</button>
+          <button class="btn btn-gold" onclick="askReset()" style="margin-left:auto">↺ Nový kvíz</button>
+        </div>
       </div>
     </div>
   </div>
@@ -695,34 +756,207 @@ window.nextQ=async()=>{
   phase='question';answersOpen=true;renderQ(qIdx);
 };
 
+// ── RESULTS STATE ──
+let _resScored=[];
+let _anonRevealed=0;
+let _namedRevealed=0;
+
 async function finishQuiz(){
   clearInterval(timerInt);phase='results';
   document.getElementById('hdr-status').textContent='Výsledky';
   await dbSet('session/'+code,{code,phase:'results',currentQ:qIdx,questionCount:questions.length,revealed:true,answersOpen:false,ts:Date.now()});
-  showScr('res');
   const players=await dbGetChildren('player/'+code);
-  renderRes(players);
+  // Compute scores
+  _resScored=players.map(p=>{
+    let s=0;
+    if(p.answers) questions.forEach((q,i)=>{if(p.answers[i]===q.correct)s++;});
+    return{...p,fs:s};
+  }).sort((a,b)=>b.fs-a.fs);
+  _anonRevealed=0;
+  _namedRevealed=0;
+  renderResStats(players);
+  renderResAnon();
+  renderResNamed();
+  resPage(1);
 }
 
-function renderRes(players){
-  const scored=players.map(p=>{let s=0;if(p.answers)questions.forEach((q,i)=>{if(p.answers[i]===q.correct)s++;});return{...p,fs:s}}).sort((a,b)=>b.fs-a.fs);
-  const order=[1,0,2];
-  document.getElementById('podium').innerHTML=order.map(rank=>{
-    const p=scored[rank];if(!p)return'';
-    const cls=['p2','p1','p3'][order.indexOf(rank)];
-    const h=['90','125','65'][order.indexOf(rank)];
-    return`<div class="pod-slot">
-      <div style="font-size:1.4rem">${['🥇','🥈','🥉'][rank]||''}</div>
-      <div class="pod-name">${esc(p.name)}</div>
-      <div class="pod-pts">${p.fs}/${questions.length}</div>
-      <div class="pod-blk ${cls}" style="height:${h}px">${rank+1}</div>
+function resPage(n){
+  document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active'));
+  document.getElementById('scr-res'+n).classList.add('active');
+}
+window.resPage=resPage;
+
+// PAGE 1 – answer statistics
+function renderResStats(players){
+  const qCount=questions.length;
+  const el=document.getElementById('res-stats');
+  if(!el)return;
+  const BCOLS_RES=['#4e8cff','#e05c5c','#2ac878','#f5a623'];
+  el.innerHTML=questions.map((q,qi)=>{
+    const counts=[0,0,0,0];
+    let answered=0;
+    players.forEach(p=>{
+      if(p.answers&&p.answers[qi]!==undefined){
+        answered++;
+        const a=p.answers[qi];
+        if(a>=0&&a<=3)counts[a]++;
+      }
+    });
+    const tot=answered||1;
+    const correctCount=counts[q.correct];
+    const pct=Math.round(correctCount/tot*100);
+    const bars=q.options.map((opt,i)=>{
+      const w=Math.round(counts[i]/tot*100);
+      const isOk=i===q.correct;
+      return`<div class="res-bar-row">
+        <div class="res-bar-lbl${isOk?' ok':''}">${'ABCD'[i]}</div>
+        <div class="res-bar-track">
+          <div class="res-bar-fill" style="width:${w}%;background:${isOk?'var(--success)':BCOLS_RES[i]}">${w>12?opt.substring(0,18)+(opt.length>18?'…':''):''}</div>
+        </div>
+        <div class="res-bar-cnt">${counts[i]}</div>
+      </div>`;
+    }).join('');
+    const pillCls=pct>=60?'good':pct<=30?'bad':'';
+    return`<div class="res-stat-card">
+      <div class="res-q-label">Otázka ${qi+1} / ${qCount}</div>
+      <div class="res-q-text">${esc(q.question)}</div>
+      ${bars}
+      <span class="res-pct-pill ${pillCls}">✓ Správně: ${pct}% (${correctCount}/${answered})</span>
     </div>`;
   }).join('');
-  document.getElementById('lb').innerHTML=scored.map((p,i)=>{
-    const pct=questions.length?Math.round(p.fs/questions.length*100):0;
-    return`<div class="lbr anim"><div class="lbrank${i<3?' top':''}">${i+1}</div><div class="lbname">${esc(p.name)}</div><div class="lbscore">${p.fs}<span class="lbpct">(${pct}%)</span></div></div>`;
-  }).join('');
 }
+
+// PAGE 2 – anonymous gauge ranking (bottom to top reveal)
+function renderResAnon(){
+  const el=document.getElementById('res-anon');
+  if(!el)return;
+  const maxQ=questions.length||1;
+  // Build rows bottom-to-top (last = winner on screen at bottom → we'll render reversed)
+  const reversed=[..._resScored].reverse(); // worst first displayed first
+  const total=reversed.length;
+  el.innerHTML=reversed.map((p,ri)=>{
+    const rank=total-ri; // rank 1 = best
+    const fillCls=rank===1?'':rank===2?'s':rank===3?'b':'p';
+    const rankCls=rank<=3?' t':'';
+    return`<div class="g-row" id="ga-${ri}">
+      <div class="g-rank${rankCls}">${rank}</div>
+      <div class="g-track">
+        <div class="g-fill ${fillCls}" style="width:0%" id="gf-${ri}"></div>
+      </div>
+      <div class="g-pts" id="gp-${ri}"></div>
+    </div>`;
+  }).join('');
+  // Reveal already-revealed rows immediately
+  for(let i=0;i<_anonRevealed;i++) _showAnonRow(i,reversed,maxQ,true);
+  const btn=document.getElementById('btn-reveal-next');
+  if(btn) btn.disabled=_anonRevealed>=total;
+}
+
+function _showAnonRow(ri,reversed,maxQ,instant){
+  const row=document.getElementById('ga-'+ri);
+  const fill=document.getElementById('gf-'+ri);
+  const pts=document.getElementById('gp-'+ri);
+  if(!row)return;
+  const p=reversed[ri];
+  const w=Math.round(p.fs/maxQ*100);
+  row.classList.add('vis');
+  // Animate fill bar
+  if(instant){
+    if(fill){fill.style.transition='none';fill.style.width=w+'%';fill.textContent=p.fs+'/'+maxQ;}
+    if(pts) pts.textContent=p.fs+' b.';
+  } else {
+    setTimeout(()=>{
+      if(fill){fill.style.width=w+'%';fill.textContent=p.fs+'/'+maxQ;}
+      if(pts) pts.textContent=p.fs+' b.';
+    },50);
+  }
+}
+
+window.revealNext=function(){
+  const reversed=[..._resScored].reverse();
+  const maxQ=questions.length||1;
+  if(_anonRevealed>=reversed.length) return;
+  _showAnonRow(_anonRevealed,reversed,maxQ,false);
+  _anonRevealed++;
+  const btn=document.getElementById('btn-reveal-next');
+  if(btn) btn.disabled=_anonRevealed>=reversed.length;
+};
+
+window.revealAll=function(){
+  const reversed=[..._resScored].reverse();
+  const maxQ=questions.length||1;
+  while(_anonRevealed<reversed.length){
+    _showAnonRow(_anonRevealed,reversed,maxQ,false);
+    _anonRevealed++;
+  }
+  const btn=document.getElementById('btn-reveal-next');
+  if(btn) btn.disabled=true;
+};
+
+// PAGE 3 – named gauge ranking (same reveal logic)
+function renderResNamed(){
+  const el=document.getElementById('res-named');
+  if(!el)return;
+  const maxQ=questions.length||1;
+  const reversed=[..._resScored].reverse();
+  const total=reversed.length;
+  el.innerHTML=reversed.map((p,ri)=>{
+    const rank=total-ri;
+    const fillCls=rank===1?'':rank===2?'s':rank===3?'b':'p';
+    const rankCls=rank<=3?' t':'';
+    return`<div class="g-row" id="gn-${ri}">
+      <div class="g-rank${rankCls}">${rank}</div>
+      <div class="g-name">${esc(p.name)}</div>
+      <div class="g-track">
+        <div class="g-fill ${fillCls}" style="width:0%" id="gnf-${ri}"></div>
+      </div>
+      <div class="g-pts" id="gnp-${ri}"></div>
+    </div>`;
+  }).join('');
+  for(let i=0;i<_namedRevealed;i++) _showNamedRow(i,reversed,maxQ,true);
+  const btn=document.getElementById('btn-reveal-next-named');
+  if(btn) btn.disabled=_namedRevealed>=total;
+}
+
+function _showNamedRow(ri,reversed,maxQ,instant){
+  const row=document.getElementById('gn-'+ri);
+  const fill=document.getElementById('gnf-'+ri);
+  const pts=document.getElementById('gnp-'+ri);
+  if(!row)return;
+  const p=reversed[ri];
+  const w=Math.round(p.fs/maxQ*100);
+  row.classList.add('vis');
+  if(instant){
+    if(fill){fill.style.transition='none';fill.style.width=w+'%';fill.textContent=p.fs+'/'+maxQ;}
+    if(pts) pts.textContent=p.fs+' b.';
+  } else {
+    setTimeout(()=>{
+      if(fill){fill.style.width=w+'%';fill.textContent=p.fs+'/'+maxQ;}
+      if(pts) pts.textContent=p.fs+' b.';
+    },50);
+  }
+}
+
+window.revealNextNamed=function(){
+  const reversed=[..._resScored].reverse();
+  const maxQ=questions.length||1;
+  if(_namedRevealed>=reversed.length) return;
+  _showNamedRow(_namedRevealed,reversed,maxQ,false);
+  _namedRevealed++;
+  const btn=document.getElementById('btn-reveal-next-named');
+  if(btn) btn.disabled=_namedRevealed>=reversed.length;
+};
+
+window.revealAllNamed=function(){
+  const reversed=[..._resScored].reverse();
+  const maxQ=questions.length||1;
+  while(_namedRevealed<reversed.length){
+    _showNamedRow(_namedRevealed,reversed,maxQ,false);
+    _namedRevealed++;
+  }
+  const btn=document.getElementById('btn-reveal-next-named');
+  if(btn) btn.disabled=true;
+};
 
 // ── UTILS ──
 function showScr(n){document.querySelectorAll('.scr').forEach(s=>s.classList.remove('active'));document.getElementById('scr-'+n).classList.add('active')}
