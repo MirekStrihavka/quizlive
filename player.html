@@ -146,13 +146,9 @@ input:focus{border-color:var(--gold)}
 
   <!-- RESULTS -->
   <div id="scr-res">
-    <div class="res-title">◆ Výsledky</div>
-    <div class="score-big">
-      <div class="score-num" id="my-score">0</div>
-      <div class="score-sub" id="my-score-sub">správných odpovědí</div>
-    </div>
-    <div class="lb-title">Pořadí</div>
-    <div id="lb-list"></div>
+    <div class="res-title">◆ Kvíz skončil</div>
+    <div style="font-size:3rem;margin:16px 0">🏁</div>
+    <div style="font-size:.95rem;color:var(--muted);text-align:center;line-height:1.6">Výsledky uvidíš<br>na hlavní obrazovce</div>
   </div>
 </div>
 
@@ -398,23 +394,6 @@ function showInterResult(qi, q){
 
 async function showResults(){
   showScr('res');
-  const total = (await dbGet('session/'+myCode+'/questionCount')) || 0;
-  document.getElementById('my-score').textContent=myScore;
-  document.getElementById('my-score-sub').textContent='z '+total+' otázek ('+Math.round(myScore/(total||1)*100)+'%)';
-
-  // Get all players
-  const snap = await dbGet('player/'+myCode);
-  if(!snap) return;
-  const players=[];
-  Object.values(snap).forEach(p=>{ if(p&&p.name) players.push(p); });
-  players.sort((a,b)=>(b.score||0)-(a.score||0));
-
-  document.getElementById('lb-list').innerHTML=players.map((p,i)=>`
-    <div class="lbr${p.name===myName?' me':''}">
-      <div class="lbrank${i<3?' top':''}">${i+1}</div>
-      <div class="lbname">${esc(p.name)}${p.name===myName?' (ty)':''}</div>
-      <div class="lbscore">${p.score||0}</div>
-    </div>`).join('');
 }
 
 function esc(s){return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')}
