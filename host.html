@@ -512,13 +512,14 @@ function updUI(players){
   }
 
   // Right panel - during quiz show waiting players, in lobby show all with score
-  if(phase==='lobby'||phase==='results'){
+  if(phase==='lobby'){
     document.getElementById('r-players').innerHTML=players.map(p=>`
       <div class="prow">
         <div class="pavatar">${esc(p.name).substring(0,2).toUpperCase()}</div>
         <div class="pname">${esc(p.name)}</div>
-        <div class="ppts">${p.score||0} b.</div>
       </div>`).join('');
+  } else if(phase==='results'){
+    document.getElementById('r-players').innerHTML='<div style="padding:12px;color:var(--muted);font-size:.8rem;text-align:center">Výsledky jsou zobrazeny na hlavní ploše</div>';
   } else {
     // During quiz: show who hasn't answered yet
     const waiting=players.filter(p=>!(p.answers&&p.answers[qIdx]!==undefined));
@@ -792,7 +793,9 @@ function renderResStats(players){
   const el=document.getElementById('res-stats');
   if(!el)return;
   const BCOLS_RES=['#4e8cff','#e05c5c','#2ac878','#f5a623'];
-  el.innerHTML=questions.map((q,qi)=>{
+  let totalCorrect=0, totalAnswered=0;
+
+  const cardsHtml=questions.map((q,qi)=>{
     const counts=[0,0,0,0];
     let answered=0;
     players.forEach(p=>{
@@ -805,25 +808,66 @@ function renderResStats(players){
     const tot=answered||1;
     const correctCount=counts[q.correct];
     const pct=Math.round(correctCount/tot*100);
-    const bars=q.options.map((opt,i)=>{
+    totalCorrect+=correctCount;
+    totalAnswered+=answered;
+    const bars=(q.options||[]).map((opt,i)=>{
+      const safeOpt=opt||'';
       const w=Math.round(counts[i]/tot*100);
       const isOk=i===q.correct;
+      const label=w>14?(safeOpt.substring(0,20)+(safeOpt.length>20?'…':'')):'';
       return`<div class="res-bar-row">
         <div class="res-bar-lbl${isOk?' ok':''}">${'ABCD'[i]}</div>
         <div class="res-bar-track">
-          <div class="res-bar-fill" style="width:${w}%;background:${isOk?'var(--success)':BCOLS_RES[i]}">${w>12?opt.substring(0,18)+(opt.length>18?'…':''):''}</div>
+          <div class="res-bar-fill" style="width:${w}%;background:${isOk?'var(--success)':BCOLS_RES[i]}">${label}</div>
         </div>
         <div class="res-bar-cnt">${counts[i]}</div>
       </div>`;
     }).join('');
     const pillCls=pct>=60?'good':pct<=30?'bad':'';
     return`<div class="res-stat-card">
-      <div class="res-q-label">Otázka ${qi+1} / ${qCount}</div>
-      <div class="res-q-text">${esc(q.question)}</div>
+      <div class="res-q-label">Otázka ${qi+1} / ${qCount} &nbsp;·&nbsp; <span style="color:var(--text2);font-weight:400;text-transform:none;letter-spacing:0">${esc(q.question||q.text||'')}</span></div>
       ${bars}
       <span class="res-pct-pill ${pillCls}">✓ Správně: ${pct}% (${correctCount}/${answered})</span>
     </div>`;
   }).join('');
+
+  // Overall summary
+  const overallPct=totalAnswered?Math.round(totalCorrect/totalAnswered*100):0;
+  const overallCls=overallPct>=60?'good':overallPct<=30?'bad':'';
+  const summaryHtml=`<div style="margin-top:18px;padding:18px;background:var(--bg2);border:1px solid var(--border);border-radius:14px">
+    <div style="font-size:.65rem;font-weight:700;letter-spacing:1.5px;text-transform:uppercase;color:var(--gold);margin-bottom:10px">◆ Celkový přehled</div>
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:8px">
+      <div style="flex:1;height:24px;background:var(--bg4);border-radius:6px;overflow:hidden">
+        <div style="height:100%;width:${overallPct}%;background:${overallPct>=60?'var(--success)':overallPct<=30?'#e07070':'var(--gold)'};border-radius:6px;transition:width 1s ease;display:flex;align-items:center;padding-left:10px;font-size:.75rem;font-weight:700;color:var(--bg)">
+          ${overallPct>15?overallPct+'%':''}
+        </div>
+      </div>
+      <div style="font-size:.9rem;font-weight:700;color:var(--gold2);min-width:50px;text-align:right">${overallPct}%</div>
+    </div>
+    <div style="display:flex;gap:20px;font-size:.78rem;color:var(--text2)">
+      <span>Správných odpovědí: <strong style="color:var(--success)">${totalCorrect}</strong></span>
+      <span>Celkem odpovědí: <strong>${totalAnswered}</strong></span>
+      <span>Otázek: <strong>${qCount}</strong></span>
+      <span>Hráčů: <strong>${players.length}</strong></span>
+    </div>
+    <div style="margin-top:8px">
+      ${questions.map((q,qi)=>{
+        const tot2=players.filter(p=>p.answers&&p.answers[qi]!==undefined).length||1;
+        const ok2=players.filter(p=>p.answers&&p.answers[qi]===q.correct).length;
+        const pct2=Math.round(ok2/tot2*100);
+        const col=pct2>=60?'var(--success)':pct2<=30?'#e07070':'var(--gold)';
+        return`<div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;font-size:.72rem">
+          <span style="color:var(--muted);min-width:60px">Ot. ${qi+1}</span>
+          <div style="flex:1;height:10px;background:var(--bg4);border-radius:3px;overflow:hidden">
+            <div style="width:${pct2}%;height:100%;background:${col};border-radius:3px;transition:width .8s ease"></div>
+          </div>
+          <span style="color:${col};min-width:34px;text-align:right;font-weight:700">${pct2}%</span>
+        </div>`;
+      }).join('')}
+    </div>
+  </div>`;
+
+  el.innerHTML=cardsHtml+summaryHtml;
 }
 
 // PAGE 2 – anonymous gauge ranking (bottom to top reveal)

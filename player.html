@@ -72,9 +72,9 @@ input:focus{border-color:var(--gold)}
 
 /* INTER RESULT */
 #scr-inter{display:none;flex-direction:column;align-items:center;justify-content:center;gap:16px;height:100%;text-align:center}
-.inter-icon{font-size:4rem}
-.inter-msg{font-family:'Cormorant Garamond',serif;font-size:1.8rem;font-weight:700}
-.inter-sub{font-size:.88rem;color:var(--muted)}
+.inter-icon{font-size:3.5rem}
+.inter-msg{font-family:'Cormorant Garamond',serif;font-size:2rem;font-weight:700;transition:color .3s}
+.inter-sub{font-size:.82rem;color:var(--muted)}
 
 /* RESULTS */
 #scr-res{display:none;flex-direction:column;gap:16px;padding-top:20px;padding-bottom:20px}
@@ -135,7 +135,13 @@ input:focus{border-color:var(--gold)}
   <div id="scr-inter">
     <div class="inter-icon" id="inter-icon">⏳</div>
     <div class="inter-msg" id="inter-msg">Správně!</div>
-    <div class="inter-sub" id="inter-sub">Čekáme na další otázku…</div>
+    <div id="inter-detail" style="display:none;width:100%;max-width:340px;background:var(--bg2);border-radius:14px;padding:14px 18px;margin-top:4px;text-align:left">
+      <div style="font-size:.68rem;font-weight:700;letter-spacing:1.2px;text-transform:uppercase;color:var(--muted);margin-bottom:8px">Výsledek otázky</div>
+      <div id="inter-q-text" style="font-size:.82rem;color:var(--text2);margin-bottom:10px;line-height:1.45"></div>
+      <div id="inter-my-ans" style="display:flex;align-items:center;gap:8px;margin-bottom:6px;font-size:.82rem"></div>
+      <div id="inter-ok-ans" style="display:flex;align-items:center;gap:8px;font-size:.82rem"></div>
+    </div>
+    <div class="inter-sub" id="inter-sub" style="margin-top:8px">Čekáme na další otázku…</div>
   </div>
 
   <!-- RESULTS -->
@@ -235,11 +241,17 @@ async function poll(){
       return;
     }
 
-    // New question
+    // New question - but wait at least 4s after inter screen was shown
     if(q!==lastQ || ts!==lastTS){
+      if(_interShownAt && Date.now()-_interShownAt < 4000){
+        // Still within min display time - keep inter screen a bit longer
+        setTimeout(()=>{ _interShownAt=0; }, 4200-( Date.now()-_interShownAt));
+        return;
+      }
       lastQ=q; lastTS=ts;
       answered = myAnswers[q]!==undefined;
       interShownQ=-1;
+      _interShownAt=0;
       renderQ(ses, q, locked);
       return;
     }
@@ -332,12 +344,55 @@ function showFeedback(choice, correct, revealed){
   }
 }
 
+let _interShownAt=0;
+
 function showInterResult(qi, q){
   if(!q) return;
   const ok = myAnswers[qi]===q.correct;
+  const myA = myAnswers[qi];
+  const BCOLS=['#4e8cff','#e05c5c','#2ac878','#f5a623'];
+
+  // Icon + main message
   document.getElementById('inter-icon').textContent=ok?'✅':'❌';
-  document.getElementById('inter-msg').textContent=ok?'Správně!':'Špatně';
-  document.getElementById('inter-sub').textContent=ok?'Správná odpověď: '+OPTS[q.correct]+': '+q.options[q.correct]:'Správně bylo: '+OPTS[q.correct]+': '+q.options[q.correct];
+  const msgEl=document.getElementById('inter-msg');
+  msgEl.textContent=ok?'Správně!':'Špatně';
+  msgEl.style.color=ok?'var(--success)':'#e07070';
+
+  // Detail panel
+  const detail=document.getElementById('inter-detail');
+  if(detail){
+    detail.style.display='block';
+    detail.style.borderTop='3px solid '+(ok?'var(--success)':'#e07070');
+
+    const qText=document.getElementById('inter-q-text');
+    if(qText) qText.textContent=q.text||'';
+
+    const myAnsEl=document.getElementById('inter-my-ans');
+    if(myAnsEl){
+      const myOptText=q.options&&q.options[myA]!=null?q.options[myA]:'–';
+      myAnsEl.innerHTML=`<span style="font-size:.7rem;color:var(--muted);min-width:70px">Tvá odpověď:</span>
+        <span style="padding:2px 10px;border-radius:12px;background:${ok?'rgba(42,200,120,.15)':'rgba(220,80,80,.15)'};color:${ok?'var(--success)':'#e07070'};font-weight:600">
+          ${OPTS[myA]||'?'}: ${esc(myOptText)}
+        </span>`;
+    }
+
+    const okAnsEl=document.getElementById('inter-ok-ans');
+    if(okAnsEl){
+      if(!ok){
+        const okOptText=q.options&&q.options[q.correct]!=null?q.options[q.correct]:'–';
+        okAnsEl.innerHTML=`<span style="font-size:.7rem;color:var(--muted);min-width:70px">Správně bylo:</span>
+          <span style="padding:2px 10px;border-radius:12px;background:rgba(42,200,120,.15);color:var(--success);font-weight:600">
+            ${OPTS[q.correct]||'?'}: ${esc(okOptText)}
+          </span>`;
+        okAnsEl.style.display='flex';
+      } else {
+        okAnsEl.style.display='none';
+      }
+    }
+  }
+
+  document.getElementById('inter-sub').textContent='Čekáme na další otázku…';
+  _interShownAt=Date.now();
   showScr('inter');
 }
 
