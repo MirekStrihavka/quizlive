@@ -378,24 +378,26 @@ async function dbGetChildren(path){
 }
 
 // ── INIT ──
-code = Math.random().toString(36).substring(2,6).toUpperCase();
-document.getElementById('hdr-code').textContent=code;
-document.getElementById('lobby-code').textContent=code;
+(async function init(){
+  code = Math.random().toString(36).substring(2,6).toUpperCase();
+  document.getElementById('hdr-code').textContent=code;
+  document.getElementById('lobby-code').textContent=code;
 
-const PLAYER_URL='https://mirekstrihavka.github.io/quizlive/player.html';
-document.getElementById('lobby-url').textContent='mirekstrihavka.github.io/quizlive/player.html';
+  const PLAYER_URL='https://mirekstrihavka.github.io/quizlive/player.html';
+  document.getElementById('lobby-url').textContent='mirekstrihavka.github.io/quizlive/player.html';
 
-new QRCode(document.getElementById('qr-box'),{
-  text: PLAYER_URL+'?code='+code,
-  width:134,height:134,colorDark:'#09090f',colorLight:'#ffffff',
-  correctLevel:QRCode.CorrectLevel.M
-});
+  new QRCode(document.getElementById('qr-box'),{
+    text: PLAYER_URL+'?code='+code,
+    width:134,height:134,colorDark:'#09090f',colorLight:'#ffffff',
+    correctLevel:QRCode.CorrectLevel.M
+  });
 
-await dbSet('session/'+code, {code,phase:'lobby',currentQ:-1,questionCount:0,revealed:false,answersOpen:false,ts:Date.now()});
-renderQL();
-updLabels();
-poll(); // fire immediately
-pollInt = setInterval(poll, 1500);
+  await dbSet('session/'+code, {code,phase:'lobby',currentQ:-1,questionCount:0,revealed:false,answersOpen:false,ts:Date.now()});
+  renderQL();
+  updLabels();
+  poll();
+  pollInt = setInterval(poll, 1500);
+})();
 
 // ── POLL ──
 async function poll(){
