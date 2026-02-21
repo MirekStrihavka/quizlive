@@ -565,10 +565,10 @@ function importRows(rows){
   toast('Importováno '+added+' otázek ✓');
 }
 window.dlTemplate=()=>{
-  const csv='otazka,A,B,C,D,spravna,cas
+  const csv=`otazka,A,B,C,D,spravna,cas
 "Kolik je 2+2?","3","4","5","22","B","20"
-"Hlavní město ČR?","Brno","Praha","Ostrava","Plzeň","B",""
-"Jaký je H2O?","Vzduch","Oheň","Voda","Zemina","C","30"';
+"Hlavni mesto CR?","Brno","Praha","Ostrava","Plzen","B",""
+"Jaky je H2O?","Vzduch","Ohen","Voda","Zemina","C","30"`;
   const a=document.createElement('a');a.href='data:text/csv;charset=utf-8,﻿'+encodeURIComponent(csv);a.download='quizlive_sablona.csv';a.click();
 };
 
